@@ -23,8 +23,8 @@ async function generateAccessToken() {
   }
 }
 
-// Crea una orden en PayPal
-exports.createOrder = async () => {
+// ✅ Crea una orden con monto dinámico
+exports.createOrderWithAmount = async (monto) => {
   try {
     const accessToken = await generateAccessToken();
 
@@ -39,35 +39,24 @@ exports.createOrder = async () => {
         intent: "CAPTURE",
         purchase_units: [
           {
-            items: [
-              {
-                name: "Metodo de pago de la zapatilla",
-                description: "Zapatilla de la marca Nike",
-                quantity: 1,
-                unit_amount: {
-                  currency_code: "USD",
-                  value: "100.00",
-                },
-              },
-            ],
             amount: {
               currency_code: "USD",
-              value: "100.00",
+              value: monto,
               breakdown: {
                 item_total: {
                   currency_code: "USD",
-                  value: "100.00",
+                  value: monto,
                 },
               },
             },
           },
         ],
         application_context: {
-          return_url: `${process.env.BASE_URL}/complete-order`,
-          cancel_url: `${process.env.BASE_URL}/cancel-order`,
+          return_url: "http://localhost:5246/Pago/ConfirmarPago",
+          cancel_url: "http://localhost:5246/Pago/CancelarPago",
           shipping_preference: "NO_SHIPPING",
           user_action: "PAY_NOW",
-          brand_name: "SneakerWest", // 🔧 corregido aquí
+          brand_name: "SneakerWest",
         },
       },
     });
@@ -82,6 +71,7 @@ exports.createOrder = async () => {
   }
 };
 
+// Captura el pago
 exports.capturePayment = async (orderId) => {
   const accessToken = await generateAccessToken();
 
@@ -93,5 +83,6 @@ exports.capturePayment = async (orderId) => {
       Authorization: `Bearer ${accessToken}`,
     },
   });
+
   return response.data;
 };

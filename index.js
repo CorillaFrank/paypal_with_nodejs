@@ -4,8 +4,8 @@ const paypal = require("./services/paypal");
 
 const app = express();
 
-app.use(express.urlencoded({ extended: false })); // NECESARIO
-app.use(express.json()); // NECESARIO
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 app.set("view engine", "ejs");
 
@@ -13,31 +13,32 @@ app.get("/", (req, res) => {
   res.render("index");
 });
 
-app.post("/pay", async (req, res) => {
+// ✅ Ruta que se llama desde tu proyecto .NET (via HttpClient)
+app.get("/create-paypal-order", async (req, res) => {
   try {
-    const order = await paypal.createOrder();
-    console.log(order);
-    const approveLink = order.links.find((link) => link.rel === "approve");
-    res.redirect(approveLink.href);
+    const monto = req.query.monto;
+    const order = await paypal.createOrderWithAmount(monto);
+    res.json(order); // devuelves el JSON a .NET
   } catch (error) {
     console.error("Error al crear la orden:", error);
-    res.status(500).send("Hubo un error al crear la orden");
+    res.status(500).json({ error: "Error al crear la orden" });
   }
 });
 
+// ✅ Ruta que PayPal llama cuando el usuario aprueba el pago
 app.get("/complete-order", async (req, res) => {
   try {
     await paypal.capturePayment(req.query.token);
     res.send("Orden completada correctamente. Gracias por tu compra.");
   } catch (error) {
-    res.send("error: " + error);
+    console.error("Error al capturar el pago:", error);
+    res.status(500).send("Error al completar el pago");
   }
-
-  // res.send("Orden completada correctamente. Gracias por tu compra.");
 });
 
+// ✅ Ruta que PayPal llama cuando el usuario cancela el pago
 app.get("/cancel-order", (req, res) => {
-  res.send("El pago fue cancelado.");
+  res.send("El pago fue cancelado por el usuario.");
 });
 
 app.listen(3000, () => console.log("Server is running on port 3000"));
